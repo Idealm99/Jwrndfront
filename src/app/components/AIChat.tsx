@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Bot, User, X, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface Message {
@@ -7,6 +7,15 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+}
+
+interface MCPTool {
+  id: string;
+  name: string;
+  description: string;
+  input: string;
+  output: string;
+  url: string;
 }
 
 export function AIChat() {
@@ -20,7 +29,43 @@ export function AIChat() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const mcpTools: MCPTool[] = [
+    {
+      id: '1',
+      name: 'Clinical Trial Data Analyzer',
+      description: '임상시험 데이터를 분석하고 통계적 유의성을 평가합니다',
+      input: 'JSON 형식의 임상시험 데이터 (환자 ID, 측정값, 시점 등)',
+      output: '통계 분석 결과, p-value, 신뢰구간, 그래프 데이터',
+      url: 'https://api.clinicaltools.com/v1/analyze',
+    },
+    {
+      id: '2',
+      name: 'FDA Regulatory Checker',
+      description: 'FDA 규제 요구사항 준수 여부를 확인합니다',
+      input: '제출 문서 종류, 적응증, 임상 단계',
+      output: '필수 문서 체크리스트, 미비 항목, 제출 가이드라인',
+      url: 'https://api.fdatools.com/v2/compliance',
+    },
+    {
+      id: '3',
+      name: 'Safety Signal Detector',
+      description: '이상반응 데이터에서 안전성 신호를 탐지합니다',
+      input: '이상반응 보고서 데이터 (MedDRA 코드, 중증도, 인과관계)',
+      output: '안전성 신호 목록, 위험도 점수, DSMB 보고용 요약',
+      url: 'https://api.safetysignal.com/v1/detect',
+    },
+    {
+      id: '4',
+      name: 'Patent Landscape Analyzer',
+      description: '특허 환경을 분석하고 자유실시 가능성을 평가합니다',
+      input: '화합물 구조, 적응증, 작용기전',
+      output: '관련 특허 목록, FTO 분석 결과, 회피 설계 제안',
+      url: 'https://api.patentanalytics.com/v1/landscape',
+    },
+  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -164,50 +209,97 @@ export function AIChat() {
         </div>
       </div>
 
-      {/* Right Panel - Suggested Questions */}
+      {/* Right Panel - MCP Server Tools */}
       <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
-        <h2 className="text-gray-900 mb-4">추천 질문</h2>
+        <h2 className="text-gray-900 mb-4">MCP 서버</h2>
         
-        <div className="space-y-2">
-          <button
-            onClick={() => setInput('현재 임상시험 진행 상황을 알려주세요')}
-            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#4A90E2] hover:bg-blue-50 transition-colors text-sm text-gray-700"
-          >
-            현재 임상시험 진행 상황을 알려주세요
-          </button>
-          <button
-            onClick={() => setInput('FDA 규제 요구사항은 무엇인가요?')}
-            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#4A90E2] hover:bg-blue-50 transition-colors text-sm text-gray-700"
-          >
-            FDA 규제 요구사항은 무엇인가요?
-          </button>
-          <button
-            onClick={() => setInput('시장 분석 결과를 요약해주세요')}
-            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#4A90E2] hover:bg-blue-50 transition-colors text-sm text-gray-700"
-          >
-            시장 분석 결과를 요약해주세요
-          </button>
-          <button
-            onClick={() => setInput('특허 출원 진행 상황은 어떻게 되나요?')}
-            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#4A90E2] hover:bg-blue-50 transition-colors text-sm text-gray-700"
-          >
-            특허 출원 진행 상황은 어떻게 되나요?
-          </button>
-          <button
-            onClick={() => setInput('안전성 모니터링 현황을 알려주세요')}
-            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#4A90E2] hover:bg-blue-50 transition-colors text-sm text-gray-700"
-          >
-            안전성 모니터링 현황을 알려주세요
-          </button>
-        </div>
-
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="text-sm text-gray-900 mb-2">💡 도움말</h3>
-          <p className="text-xs text-gray-600">
-            임상시험, 규제 준수, 시장 분석, 특허 전략 등 신약 개발 전반에 대해 질문하실 수 있습니다.
-          </p>
+        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+          <div className="space-y-2">
+            {mcpTools.map((tool) => (
+              <button
+                key={tool.id}
+                onClick={() => setSelectedTool(tool)}
+                className="w-full text-left p-3 rounded-lg border border-gray-200 bg-white hover:border-[#4A90E2] hover:bg-blue-50 transition-colors"
+              >
+                <p className="text-sm text-gray-900 mb-1">{tool.name}</p>
+                <p className="text-xs text-gray-500">{tool.description}</p>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Tool Detail Modal */}
+      {selectedTool && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50" onClick={() => setSelectedTool(null)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl text-gray-900">{selectedTool.name}</h2>
+              <button
+                onClick={() => setSelectedTool(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-4">{selectedTool.description}</p>
+              </div>
+
+              {/* Input Section */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <h3 className="text-sm text-gray-900 mb-2">📥 Input</h3>
+                <p className="text-sm text-gray-700">{selectedTool.input}</p>
+              </div>
+
+              {/* Output Section */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <h3 className="text-sm text-gray-900 mb-2">📤 Output</h3>
+                <p className="text-sm text-gray-700">{selectedTool.output}</p>
+              </div>
+
+              {/* URL Section */}
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h3 className="text-sm text-gray-900 mb-2 flex items-center gap-2">
+                  <ExternalLink size={16} />
+                  API URL
+                </h3>
+                <a
+                  href={selectedTool.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-[#4A90E2] hover:underline break-all"
+                >
+                  {selectedTool.url}
+                </a>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <Button
+                onClick={() => setSelectedTool(null)}
+                variant="outline"
+                className="text-gray-700"
+              >
+                닫기
+              </Button>
+              <Button
+                onClick={() => {
+                  window.open(selectedTool.url, '_blank');
+                }}
+                className="bg-[#4A90E2] hover:bg-[#3A7BC8] text-white"
+              >
+                API 문서 보기
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
